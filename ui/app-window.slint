@@ -1,0 +1,34 @@
+import { RequestHeader } from "components/request-header.slint";
+import { RequestBar } from "components/request-bar.slint";
+import { Header } from "structs/header.slint";
+import { ComboBox, LineEdit, LineEdit } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    width: 600px;
+    height: 350px;
+
+    in property<[Header]> headers;
+
+    callback send(url: string, type: string);
+
+    VerticalLayout {
+        padding: parent.width * 0.02;
+        spacing: parent.width * 0.02;
+
+        RequestBar {
+            height: parent.height * 0.1;
+            send(url, type) => root.send(url, type);
+        }
+
+        Text {
+            height: parent.height * 0.05;
+            font-size: 14px;
+            text: "Headers";
+        }
+
+        for header in root.headers: RequestHeader {
+            height: parent.height * 0.1;
+            header: header;
+        }
+    }
+}

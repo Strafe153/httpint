@@ -1,0 +1,18 @@
+import { LineEdit } from "std-widgets.slint";
+import { Header } from "../structs/header.slint"; 
+
+export component RequestHeader {
+    in-out property<Header> header;
+
+    HorizontalLayout {
+        spacing: parent.width * 0.02;
+
+        LineEdit {
+            text <=> header.name;
+        }
+
+        LineEdit {
+            text <=> header.value;
+        }
+    }
+}
