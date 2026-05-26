@@ -1,7 +1,7 @@
 import { RequestHeader } from "components/request-header.slint";
 import { RequestBar } from "components/request-bar.slint";
 import { Header } from "structs/header.slint";
-import { ComboBox, LineEdit, LineEdit } from "std-widgets.slint";
+import { ComboBox, LineEdit, LineEdit, Button } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
     width: 600px;
@@ -10,6 +10,10 @@ export component AppWindow inherits Window {
     in property<[Header]> headers;
 
     callback send(url: string, type: string);
+    callback add();
+    callback edit_name(int, string);
+    callback edit_value(int, string);
+    callback remove(int);
 
     VerticalLayout {
         padding: parent.width * 0.02;
@@ -26,9 +30,19 @@ export component AppWindow inherits Window {
             text: "Headers";
         }
 
-        for header in root.headers: RequestHeader {
+        Button {
+            width: parent.height * 0.1;
+            height: parent.height * 0.1;
+            text: "+";
+            clicked => root.add();
+        }
+
+        for header[i] in root.headers: RequestHeader {
             height: parent.height * 0.1;
             header: header;
+            edit_name(value) => root.edit_name(i, value);
+            edit_value(value) => root.edit_value(i, value);
+            remove => root.remove(i);
         }
     }
 }
