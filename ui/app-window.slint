@@ -1,11 +1,18 @@
 import { RequestHeader } from "components/request-header.slint";
 import { RequestBar } from "components/request-bar.slint";
 import { Header } from "structs/header.slint";
-import { ComboBox, LineEdit, LineEdit, Button } from "std-widgets.slint";
+import { ComboBox, LineEdit, LineEdit, Button, ScrollView } from "std-widgets.slint";
+import { RequestBody } from "components/request-body.slint";
+import { RequestHeaders } from "components/request-headers.slint";
+import { Styles } from "globals.slint";
 
 export component AppWindow inherits Window {
-    width: 600px;
-    height: 350px;
+    min-width: 720px;
+    min-height: 400px;
+    max-width: 3840px;
+    max-height: 2160px;
+
+    private property<string> type: bar.type;
 
     in property<[Header]> headers;
 
@@ -15,34 +22,27 @@ export component AppWindow inherits Window {
     callback edit_value(int, string);
     callback remove(int);
 
-    VerticalLayout {
-        padding: parent.width * 0.02;
-        spacing: parent.width * 0.02;
+    ScrollView {
+        VerticalLayout {
+            padding: Styles.padding;
+            spacing: Styles.spacing;
 
-        RequestBar {
-            height: parent.height * 0.1;
-            send(url, type) => root.send(url, type);
-        }
+            bar := RequestBar {
+                send(url, type) => root.send(url, type);
+            }
 
-        Text {
-            height: parent.height * 0.05;
-            font-size: 14px;
-            text: "Headers";
-        }
+            RequestHeaders {
+                headers: root.headers;
+                
+                add => root.add();
+                edit_name(index, value) => root.edit_name(index, value);
+                edit_value(index, value) => root.edit_value(index, value);
+                remove(index) => root.remove(index);
+            }
 
-        Button {
-            width: parent.height * 0.1;
-            height: parent.height * 0.1;
-            text: "+";
-            clicked => root.add();
-        }
-
-        for header[i] in root.headers: RequestHeader {
-            height: parent.height * 0.1;
-            header: header;
-            edit_name(value) => root.edit_name(i, value);
-            edit_value(value) => root.edit_value(i, value);
-            remove => root.remove(i);
+            RequestBody {
+                type: root.type;
+            }
         }
     }
 }

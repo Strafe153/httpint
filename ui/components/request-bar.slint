@@ -1,39 +1,37 @@
 import { Button, ComboBox, LineEdit } from "std-widgets.slint";
+import { Styles } from "../globals.slint";
 
 export component RequestBar {
     private property<[string]> types: [
         "GET",
         "POST",
         "PUT",
-        "DELETE",
         "PATCH",
-        "OPTIONS",
-        "HEAD"
+        "DELETE",
     ];
 
     private property<string> url;
-    private property<string> type: types[0];
+    
+    out property<string> type: types[0];
 
     callback send(url: string, type: string);
 
     VerticalLayout {
         HorizontalLayout {
-            spacing: parent.width * 0.02;
+            spacing: Styles.spacing;
 
             ComboBox {
-                width: parent.width * 0.16;
+                width: 100px;
                 model: types;
-                current-value <=> type;
+                current-value <=> root.type;
             }
 
             LineEdit {
-                width: parent.width * 0.7;
                 placeholder-text: "http://localhost";
-                text <=> url;
+                text <=> root.url;
             }
 
             Button {
-                width: parent.width * 0.1;
                 text: "Send";
                 clicked => root.send(root.url, root.type);
             }
