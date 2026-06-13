@@ -1,0 +1,38 @@
+import { Button, ComboBox, LineEdit } from "std-widgets.slint";
+import { Styles } from "../../globals.slint";
+
+export component RequestBar inherits VerticalLayout {
+    private property<[string]> types: [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+    ];
+
+    private property<string> url;
+    
+    out property<string> type: types[0];
+
+    callback send(url: string, type: string);
+
+    HorizontalLayout {
+        spacing: Styles.spacing;
+
+        ComboBox {
+            width: 100px;
+            model: types;
+            current-value <=> root.type;
+        }
+
+        LineEdit {
+            placeholder-text: "http://localhost";
+            text <=> root.url;
+        }
+
+        Button {
+            text: "Send";
+            clicked => root.send(root.url, root.type);
+        }
+    }
+}

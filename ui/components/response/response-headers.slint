@@ -1,0 +1,21 @@
+import { Styles } from "../../globals.slint";
+import { StandardTableView } from "std-widgets.slint";
+
+export component ResponseHeaders inherits VerticalLayout {
+    spacing: Styles.spacing;
+
+    in property<[[StandardListViewItem]]> headers;
+
+    // Text {
+    //     font-size: Styles.text_size;
+    //     text: "Headers";
+    // }
+
+    StandardTableView {
+        columns: [
+            { title: "Name" },
+            { title: "Value" }
+        ];
+        rows: root.headers;
+    }
+}

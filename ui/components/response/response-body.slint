@@ -1,0 +1,28 @@
+import { Styles } from "../../globals.slint";
+
+export component ResponseBody inherits VerticalLayout {
+    spacing: Styles.spacing;
+    
+    out property<string> body;
+
+    Text {
+        height: 3%;
+        font-size: Styles.text_size;
+        text: "Body";
+    }
+
+    Rectangle {
+        border-color: gray;
+        border-width: 1px;
+        border-radius: 5px;
+
+        VerticalLayout {
+            padding: Styles.padding;
+            
+            TextInput {
+                single-line: false;
+                text <=> body;
+            }
+        }
+    }
+}

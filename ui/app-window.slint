@@ -1,10 +1,16 @@
-import { RequestHeader } from "components/request-header.slint";
-import { RequestBar } from "components/request-bar.slint";
-import { Header } from "structs/header.slint";
-import { ComboBox, LineEdit, LineEdit, Button, ScrollView } from "std-widgets.slint";
-import { RequestBody } from "components/request-body.slint";
-import { RequestHeaders } from "components/request-headers.slint";
+
+import { LineEdit, ScrollView } from "std-widgets.slint";
 import { Styles } from "globals.slint";
+import { Header } from "structs/header.slint";
+import { Response } from "structs/response.slint";
+import { Loader } from "components/loader.slint";
+import { RequestBar } from "components/request/request-bar.slint";
+import { RequestHeader } from "components/request/request-header.slint";
+import { RequestHeaders } from "components/request/request-headers.slint";
+import { RequestBody } from "components/request/request-body.slint";
+import { ResponseBar } from "components/response/response-bar.slint";
+import { ResponseHeaders } from "components/response/response-headers.slint";
+import { ResponseBody } from "components/response/response-body.slint";
 
 export component AppWindow inherits Window {
     min-width: 720px;
@@ -13,22 +19,32 @@ export component AppWindow inherits Window {
     max-height: 2160px;
 
     private property<string> type: bar.type;
+    private property<string> body: bd.body;
 
     in property<[Header]> headers;
+    in property<Response> response;
+    in property<bool> is_loading;
 
-    callback send(url: string, type: string);
+    callback send(url: string, type: string, body: string);
     callback add();
     callback edit_name(int, string);
     callback edit_value(int, string);
     callback remove(int);
 
     ScrollView {
+        Loader {
+            is_loading: root.is_loading;
+        }
+        
         VerticalLayout {
             padding: Styles.padding;
             spacing: Styles.spacing;
+            visible: !root.is_loading;
 
+            // TODO: move everything request-related into request component,
+            // then just loop over headers and remove request-headers component
             bar := RequestBar {
-                send(url, type) => root.send(url, type);
+                send(url, type) => root.send(url, type, body);
             }
 
             RequestHeaders {
@@ -40,8 +56,20 @@ export component AppWindow inherits Window {
                 remove(index) => root.remove(index);
             }
 
-            RequestBody {
+            bd := RequestBody {
                 type: root.type;
+            }
+
+            if response.status-code > 0: VerticalLayout {
+                ResponseBar {
+                    response: root.response;
+                }
+
+                ResponseHeaders {
+                    headers: root.response.headers;
+                }
+
+                ResponseBody {}
             }
         }
     }

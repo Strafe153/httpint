@@ -1,0 +1,13 @@
+import { Response } from "../../structs/response.slint";
+
+export component ResponseBar inherits HorizontalLayout {
+    in property<Response> response;
+
+    Text {
+        text: root.response.status-code;
+    }
+
+    Text {
+        text: "\{root.response.size}B";
+    }
+}

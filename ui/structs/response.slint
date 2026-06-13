@@ -1,0 +1,8 @@
+import { Header } from "../structs/header.slint";
+
+export struct Response {
+    status_code: int,
+    size: string,
+    headers: [[StandardListViewItem]],
+    body: string,
+}

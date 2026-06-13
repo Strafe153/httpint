@@ -1,13 +1,16 @@
-import { Styles } from "../globals.slint";
+import { Styles } from "../../globals.slint";
+
 export component RequestBody {
     in property<string> type;
+
+    out property<string> body;
 
     if (type != "GET" && type != "DELETE"): VerticalLayout {
         spacing: Styles.spacing;
         
         Text {
             height: 3%;
-            font-size: Styles.text-size;
+            font-size: Styles.text_size;
             text: "Body";
         }
 
@@ -21,7 +24,8 @@ export component RequestBody {
                 
                 TextInput {
                     single-line: false;
-                } 
+                    text <=> body;
+                }
             }
         }
     }

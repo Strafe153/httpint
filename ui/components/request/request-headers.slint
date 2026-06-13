@@ -1,0 +1,35 @@
+import { Button } from "std-widgets.slint";
+import { Styles } from "../../globals.slint";
+import { Header } from "../../structs/header.slint";
+import { RequestHeader } from "request-header.slint";
+
+export component RequestHeaders inherits VerticalLayout {
+    spacing: Styles.spacing;
+    
+    in property<[Header]> headers;
+
+    callback add();
+    callback edit_name(int, string);
+    callback edit_value(int, string);
+    callback remove(int);
+
+    Text {
+        font-size: Styles.text_size;
+        text: "Headers";
+    }
+
+    Button {
+        width: 50px;
+        text: "+";
+
+        clicked => root.add();
+    }
+
+    for header[i] in root.headers: RequestHeader {
+        header: header;
+        
+        edit_name(value) => root.edit_name(i, value);
+        edit_value(value) => root.edit_value(i, value);
+        remove => root.remove(i);
+    }
+}

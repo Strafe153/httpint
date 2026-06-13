@@ -1,0 +1,29 @@
+import { Spinner } from "std-widgets.slint";
+import { Styles } from "../globals.slint";
+
+export component Loader inherits VerticalLayout {
+    alignment: center;
+    visible: root.is_loading;
+
+    in property<bool> is_loading;
+
+    HorizontalLayout {
+        alignment: center;
+
+        Spinner {
+            width: 45px;
+            height: 45px;
+            indeterminate: true;
+        }
+    }
+
+    HorizontalLayout {
+        alignment: center;
+        padding-top: Styles.padding;
+
+        Text {
+            font-size: Styles.text_size;
+            text: "Processing...";
+        }
+    }
+}

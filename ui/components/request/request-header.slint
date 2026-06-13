@@ -1,0 +1,31 @@
+import { LineEdit, Button } from "std-widgets.slint";
+import { Styles } from "../../globals.slint";
+import { Header } from "../../structs/header.slint"; 
+
+export component RequestHeader inherits HorizontalLayout {
+    spacing: Styles.spacing;
+
+    in property<Header> header;
+
+    callback edit_name(string);
+    callback edit_value(string);
+    callback remove();
+
+    LineEdit {
+        text: header.name;
+
+        edited(value) => root.edit_name(value);
+    }
+
+    LineEdit {
+        text: header.value;
+
+        edited(value) => root.edit_value(value);
+    }
+
+    Button {
+        text: "X";
+        
+        clicked => root.remove();
+    }
+}
