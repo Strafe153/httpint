@@ -78,7 +78,7 @@ impl<'a> WindowHandler<'a> {
         });
     }
 
-    pub fn on_remove(&self) {
+    fn on_remove(&self) {
         let model  = self.headers_model.clone();
 
         self.window.on_remove(move |i: i32| {
