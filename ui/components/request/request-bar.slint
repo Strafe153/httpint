@@ -32,6 +32,8 @@ export component RequestBar inherits VerticalLayout {
 
         Button {
             text: "Send";
+            enabled: !root.url.is-empty;
+            
             clicked => root.send(root.url, root.type);
         }
     }
