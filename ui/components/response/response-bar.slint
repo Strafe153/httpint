@@ -4,10 +4,10 @@ export component ResponseBar inherits HorizontalLayout {
     in property<Response> response;
 
     Text {
-        text: root.response.status-code;
+        text: "Status code: \{root.response.status-code}";
     }
 
     Text {
-        text: "\{root.response.size}B";
+        text: "Size: \{root.response.size}B";
     }
 }

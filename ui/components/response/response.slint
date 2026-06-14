@@ -1,0 +1,35 @@
+import { Response } from "../../structs/response.slint";
+import { HeaderText } from "../header-text.slint";
+import { ResponseBar } from "response-bar.slint";
+import { ResponseHeaders } from "response-headers.slint";
+import { ResponseBody } from "response-body.slint";
+
+export component Response inherits VerticalLayout {
+    in property<Response> response;
+
+    HeaderText {
+        text: "Response";
+    }
+    
+    if root.response.size > 0: VerticalLayout {
+        ResponseBar {
+            response: root.response;
+        }
+
+        ResponseHeaders {
+            headers: root.response.headers;
+        }
+
+        ResponseBody {}
+    }
+
+    if root.response.size < 1: VerticalLayout {
+        HorizontalLayout {
+            alignment: center;
+
+            Text {
+                text: "No response";
+            }
+        }
+    }
+}

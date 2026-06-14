@@ -1,0 +1,42 @@
+import { Styles } from "../../globals.slint";
+import { Header } from "../../structs/header.slint";
+import { Response } from "../../structs/response.slint";
+import { HeaderText } from "../header-text.slint";
+import { RequestBar } from "request-bar.slint";
+import { RequestHeaders } from "request-headers.slint";
+import { RequestBody } from "request-body.slint";
+
+export component Request inherits VerticalLayout {
+    in property<[Header]> headers;
+    in property<Response> response;
+
+    out property<string> type: bar.type;
+    out property<string> body: bd.body;
+
+    callback send(url: string, type: string, body: string);
+    callback add();
+    callback edit_name(int, string);
+    callback edit_value(int, string);
+    callback remove(int);
+                
+    HeaderText {
+        text: "Request";
+    }
+
+    bar := RequestBar {
+        send(url, type) => root.send(url, type, body);
+    }
+
+    RequestHeaders {
+        headers: root.headers;
+        
+        add => root.add();
+        edit_name(index, value) => root.edit_name(index, value);
+        edit_value(index, value) => root.edit_value(index, value);
+        remove(index) => root.remove(index);
+    }
+
+    bd := RequestBody {
+        type: root.type;
+    }
+}

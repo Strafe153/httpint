@@ -1,25 +1,21 @@
 
-import { LineEdit, ScrollView } from "std-widgets.slint";
+import { ScrollView } from "std-widgets.slint";
 import { Styles } from "globals.slint";
 import { Header } from "structs/header.slint";
 import { Response } from "structs/response.slint";
 import { Loader } from "components/loader.slint";
-import { RequestBar } from "components/request/request-bar.slint";
-import { RequestHeader } from "components/request/request-header.slint";
-import { RequestHeaders } from "components/request/request-headers.slint";
-import { RequestBody } from "components/request/request-body.slint";
-import { ResponseBar } from "components/response/response-bar.slint";
-import { ResponseHeaders } from "components/response/response-headers.slint";
-import { ResponseBody } from "components/response/response-body.slint";
+import { Request } from "components/request/request.slint";
+import { Response } from "components/response/response.slint";
 
 export component AppWindow inherits Window {
-    min-width: 720px;
-    min-height: 400px;
+    min-width: 1024px;
+    min-height: 576px;
     max-width: 3840px;
     max-height: 2160px;
+    title: "Httpint";
 
-    private property<string> type: bar.type;
-    private property<string> body: bd.body;
+    private property<string> type: rq.type;
+    private property<string> body: rq.body;
 
     in property<[Header]> headers;
     in property<Response> response;
@@ -36,40 +32,34 @@ export component AppWindow inherits Window {
             is_loading: root.is_loading;
         }
         
-        VerticalLayout {
+        HorizontalLayout {
             padding: Styles.padding;
             spacing: Styles.spacing;
             visible: !root.is_loading;
 
-            // TODO: move everything request-related into request component,
-            // then just loop over headers and remove request-headers component
-            bar := RequestBar {
-                send(url, type) => root.send(url, type, body);
-            }
+            rq := Request {
+                width: root.width * 0.6 - Styles.padding - Styles.spacing - divider.width;
+                spacing: Styles.spacing;
 
-            RequestHeaders {
                 headers: root.headers;
-                
+
+                send(url, type) => root.send(url, type, body);
                 add => root.add();
                 edit_name(index, value) => root.edit_name(index, value);
                 edit_value(index, value) => root.edit_value(index, value);
                 remove(index) => root.remove(index);
             }
 
-            bd := RequestBody {
-                type: root.type;
+            divider := Rectangle {
+                width: 1px;
+                background: #808080;
             }
 
-            if response.status-code > 0: VerticalLayout {
-                ResponseBar {
-                    response: root.response;
-                }
+            Response {
+                width: root.width * 0.4 - Styles.padding - Styles.spacing;
+                spacing: Styles.spacing;
 
-                ResponseHeaders {
-                    headers: root.response.headers;
-                }
-
-                ResponseBody {}
+                response: root.response;
             }
         }
     }
