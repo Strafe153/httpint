@@ -7,11 +7,11 @@ import { RequestHeaders } from "request-headers.slint";
 import { RequestBody } from "request-body.slint";
 
 export component Request inherits VerticalLayout {
+    private property<string> type: bar.type;
+    private property<string> body: bd.body;
+
     in property<[Header]> headers;
     in property<Response> response;
-
-    out property<string> type: bar.type;
-    out property<string> body: bd.body;
 
     callback send(url: string, type: string, body: string);
     callback add();
@@ -24,7 +24,7 @@ export component Request inherits VerticalLayout {
     }
 
     bar := RequestBar {
-        send(url, type) => root.send(url, type, body);
+        send(url, type) => root.send(url, type, root.body);
     }
 
     RequestHeaders {

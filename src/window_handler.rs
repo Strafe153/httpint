@@ -168,6 +168,7 @@ impl<'a> WindowHandler<'a> {
                                         };
 
                                         window.set_response(response);
+                                        window.set_has_response_error(false);
                                         window.set_is_loading(false);
                                     })
                                     .unwrap();
@@ -175,7 +176,10 @@ impl<'a> WindowHandler<'a> {
                         }
                         Err(_) => {
                             window_weak_clone
-                                .upgrade_in_event_loop(move |window| window.set_is_loading(false))
+                                .upgrade_in_event_loop(move |window| {
+                                    window.set_has_response_error(true);
+                                    window.set_is_loading(false);
+                                })
                                 .unwrap();
                         }
                     }

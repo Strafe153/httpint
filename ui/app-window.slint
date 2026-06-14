@@ -14,11 +14,9 @@ export component AppWindow inherits Window {
     max-height: 2160px;
     title: "Httpint";
 
-    private property<string> type: rq.type;
-    private property<string> body: rq.body;
-
     in property<[Header]> headers;
     in property<Response> response;
+    in property<bool> has_response_error;
     in property<bool> is_loading;
 
     callback send(url: string, type: string, body: string);
@@ -37,13 +35,13 @@ export component AppWindow inherits Window {
             spacing: Styles.spacing;
             visible: !root.is_loading;
 
-            rq := Request {
+            request := Request {
                 width: root.width * 0.6 - Styles.padding - Styles.spacing - divider.width;
                 spacing: Styles.spacing;
 
                 headers: root.headers;
 
-                send(url, type) => root.send(url, type, body);
+                send(url, type, body) => root.send(url, type, body);
                 add => root.add();
                 edit_name(index, value) => root.edit_name(index, value);
                 edit_value(index, value) => root.edit_value(index, value);
@@ -60,6 +58,7 @@ export component AppWindow inherits Window {
                 spacing: Styles.spacing;
 
                 response: root.response;
+                has_error: root.has_response_error;
             }
         }
     }
