@@ -27,7 +27,7 @@ impl<'a> WindowHandler<'a> {
         WindowHandler {
             window,
             headers_model,
-            client: Arc::new(Client::new())
+            client: Arc::new(Client::new()),
         }
     }
 
@@ -40,7 +40,7 @@ impl<'a> WindowHandler<'a> {
     }
 
     fn on_add(&self) {
-        let model  = self.headers_model.clone();
+        let model = self.headers_model.clone();
 
         self.window.on_add(move || {
             let header = Header {
@@ -53,7 +53,7 @@ impl<'a> WindowHandler<'a> {
     }
 
     fn on_edit_name(&self) {
-        let model  = self.headers_model.clone();
+        let model = self.headers_model.clone();
 
         self.window.on_edit_name(move |i, value| {
             let i = i as usize;
@@ -66,7 +66,7 @@ impl<'a> WindowHandler<'a> {
     }
 
     fn on_edit_value(&self) {
-        let model  = self.headers_model.clone();
+        let model = self.headers_model.clone();
 
         self.window.on_edit_value(move |i, value| {
             let i = i as usize;
@@ -79,7 +79,7 @@ impl<'a> WindowHandler<'a> {
     }
 
     fn on_remove(&self) {
-        let model  = self.headers_model.clone();
+        let model = self.headers_model.clone();
 
         self.window.on_remove(move |i: i32| {
             model.remove(i as usize);
@@ -90,7 +90,7 @@ impl<'a> WindowHandler<'a> {
     // TODO: properly handle errors
     fn on_send(&self) {
         let window_weak = self.window.as_weak();
-        let model  = self.headers_model.clone();
+        let model = self.headers_model.clone();
         let client = self.client.clone();
 
         self.window.on_send(move |url, method, body| {
@@ -119,7 +119,9 @@ impl<'a> WindowHandler<'a> {
                     }
                 }
 
-                if let Ok(method) = Method::from_str(&method) {
+                if let Ok(method) = Method::from_str(&method)
+                    && !url.is_empty()
+                {
                     let mut request = client
                         .request(method.clone(), url.as_str())
                         .headers(header_map);
@@ -171,7 +173,11 @@ impl<'a> WindowHandler<'a> {
                                     .unwrap();
                             }
                         }
-                        Err(_) => {}
+                        Err(_) => {
+                            window_weak_clone
+                                .upgrade_in_event_loop(move |window| window.set_is_loading(false))
+                                .unwrap();
+                        }
                     }
                 }
             });
