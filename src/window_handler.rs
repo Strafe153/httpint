@@ -1,9 +1,9 @@
 use reqwest::{
     Method,
     blocking::Client,
-    header::{HeaderMap, HeaderName, HeaderValue},
+    header::{HeaderMap, HeaderName, HeaderValue, MaxSizeReached},
 };
-use slint::{ComponentHandle, Model, ModelRc, SharedString, StandardListViewItem, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, StandardListViewItem, VecModel, Weak};
 use std::{rc::Rc, str::FromStr, sync::Arc, thread};
 
 use crate::{AppWindow, Header, Response};
@@ -96,95 +96,154 @@ impl<'a> WindowHandler<'a> {
         self.window.on_send(move |url, method, body| {
             window_weak.unwrap().set_is_loading(true);
 
-            let headers: Vec<_> = model
-                .iter()
-                .map(|h| [h.name.to_string(), h.value.to_string()])
-                .collect();
-
             let client = client.clone();
             let window_weak_clone = window_weak.clone();
+            let headers = to_headers_vector(model.clone());
 
             thread::spawn(move || {
-                let mut header_map = HeaderMap::new();
-
-                for [name, value] in headers.iter() {
-                    let result = header_map.try_append(
-                        HeaderName::from_str(name).unwrap(),
-                        HeaderValue::from_str(value).unwrap(),
-                    );
-
-                    match result {
-                        Ok(_) => break,
-                        Err(_) => {}
-                    }
-                }
-
+                // rewrite with a match clause
                 if let Ok(method) = Method::from_str(&method)
                     && !url.is_empty()
                 {
-                    let mut request = client
-                        .request(method.clone(), url.as_str())
-                        .headers(header_map);
+                    let header_map_result = to_header_map(headers);
 
-                    if method != Method::GET && method != Method::DELETE {
-                        request = request.body(body.to_string());
-                    }
+                    match header_map_result {
+                        Ok(h) => {
+                            let response_result = prepare_request(
+                                client,
+                                method,
+                                url.as_str(),
+                                body.to_string(),
+                                h,
+                            )
+                            .send();
 
-                    let response_result = request.send();
+                            match response_result {
+                                Ok(r) => {
+                                    let status_code = r.status().as_u16() as i32;
+                                    let size = r.content_length().unwrap_or(0).to_string();
+                                    let headers = get_response_headers(&r);
 
-                    match response_result {
-                        Ok(r) => {
-                            let status_code = r.status().as_u16() as i32;
-                            let size = r.content_length().unwrap_or(0).to_string();
-
-                            let headers: Vec<Vec<StandardListViewItem>> = r
-                                .headers()
-                                .iter()
-                                .map(|(name, value)| {
-                                    vec![
-                                        StandardListViewItem::from(SharedString::from(
-                                            name.as_str(),
-                                        )),
-                                        StandardListViewItem::from(SharedString::from(
-                                            value.to_str().unwrap_or(""),
-                                        )),
-                                    ]
-                                })
-                                .collect();
-
-                            if let Ok(text) = r.text() {
-                                window_weak_clone
-                                    .upgrade_in_event_loop(move |window| {
-                                        let headers: Vec<ModelRc<StandardListViewItem>> = headers
-                                            .into_iter()
-                                            .map(|vec| ModelRc::new(VecModel::from(vec)))
-                                            .collect();
-
-                                        let response = Response {
+                                    // rewrite with a match clause
+                                    if let Ok(text) = r.text() {
+                                        set_success(
+                                            window_weak_clone,
                                             status_code,
-                                            size: size.into(),
-                                            headers: ModelRc::new(VecModel::from(headers)),
-                                            body: text.into(),
-                                        };
-
-                                        window.set_response(response);
-                                        window.set_has_response_error(false);
-                                        window.set_is_loading(false);
-                                    })
-                                    .unwrap();
+                                            size,
+                                            headers,
+                                            text,
+                                        );
+                                    }
+                                }
+                                Err(_) => set_failed(window_weak_clone),
                             }
                         }
-                        Err(_) => {
-                            window_weak_clone
-                                .upgrade_in_event_loop(move |window| {
-                                    window.set_has_response_error(true);
-                                    window.set_is_loading(false);
-                                })
-                                .unwrap();
-                        }
+                        Err(_) => set_failed(window_weak_clone),
                     }
                 }
             });
         });
     }
+}
+
+fn to_headers_vector(model: Rc<VecModel<Header>>) -> Vec<[String; 2]> {
+    model
+        .iter()
+        .map(|h| [h.name.to_string(), h.value.to_string()])
+        .collect()
+}
+
+fn to_header_map(headers: Vec<[String; 2]>) -> Result<HeaderMap, MaxSizeReached> {
+    let mut header_map = HeaderMap::new();
+
+    for [name, value] in headers.iter() {
+        header_map.try_append(
+            HeaderName::from_str(name).unwrap(),
+            HeaderValue::from_str(value).unwrap(),
+        )?;
+    }
+
+    Ok(header_map)
+}
+
+fn prepare_request(
+    client: Arc<Client>,
+    method: Method,
+    url: &str,
+    body: String,
+    header_map: HeaderMap,
+) -> reqwest::blocking::RequestBuilder {
+    let mut request = client.request(method.clone(), url).headers(header_map);
+
+    if method != Method::GET && method != Method::DELETE {
+        request = request.body(body);
+    }
+
+    request
+}
+
+fn get_response_headers(r: &reqwest::blocking::Response) -> Vec<Vec<StandardListViewItem>> {
+    r.headers()
+        .iter()
+        .map(|(name, value)| {
+            vec![
+                StandardListViewItem::from(SharedString::from(name.as_str())),
+                StandardListViewItem::from(SharedString::from(value.to_str().unwrap_or(""))),
+            ]
+        })
+        .collect()
+}
+
+fn to_headers_vector_model(
+    headers: Vec<Vec<StandardListViewItem>>,
+) -> Vec<ModelRc<StandardListViewItem>> {
+    headers
+        .into_iter()
+        .map(|vec| ModelRc::new(VecModel::from(vec)))
+        .collect()
+}
+
+fn create_response(
+    status_code: i32,
+    size: String,
+    headers: Vec<Vec<StandardListViewItem>>,
+    text: String,
+) -> Response {
+    let headers = ModelRc::new(VecModel::from(to_headers_vector_model(headers)));
+
+    Response {
+        status_code,
+        size: size.into(),
+        headers,
+        body: text.into(),
+    }
+}
+
+fn set_success(
+    window: Weak<AppWindow>,
+    status_code: i32,
+    size: String,
+    headers: Vec<Vec<StandardListViewItem>>,
+    text: String,
+) {
+    window
+        .upgrade_in_event_loop(move |w| {
+            let response = create_response(status_code, size, headers, text);
+
+            w.set_response(response);
+            w.set_has_response_error(false);
+            w.set_is_loading(false);
+        })
+        .unwrap();
+}
+
+fn set_failed(window: Weak<AppWindow>) {
+    // substitute has_response_error with error_message and here pass
+    // the message about header map error
+    window
+        .upgrade_in_event_loop(move |w| {
+            w.set_has_response_error(true);
+            w.set_is_loading(false);
+        })
+        .unwrap();
 }
