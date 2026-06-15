@@ -187,27 +187,21 @@ fn read_response_headers(r: &reqwest::blocking::Response) -> Vec<Vec<StandardLis
         .collect()
 }
 
-fn to_headers_vector_model(
-    headers: Vec<Vec<StandardListViewItem>>,
-) -> Vec<ModelRc<StandardListViewItem>> {
-    headers
-        .into_iter()
-        .map(|vec| ModelRc::new(VecModel::from(vec)))
-        .collect()
-}
-
 fn create_response(
     status_code: i32,
     size: String,
     headers: Vec<Vec<StandardListViewItem>>,
     body: String,
 ) -> Response {
-    let headers = ModelRc::new(VecModel::from(to_headers_vector_model(headers)));
+    let headers: Vec<ModelRc<StandardListViewItem>> = headers
+        .into_iter()
+        .map(|vec| ModelRc::new(VecModel::from(vec)))
+        .collect();
 
     Response {
         status_code,
         size: size.into(),
-        headers,
+        headers: ModelRc::new(VecModel::from(headers)),
         body: body.into(),
     }
 }
