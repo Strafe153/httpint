@@ -86,60 +86,45 @@ impl<'a> WindowHandler<'a> {
         });
     }
 
-    // TODO: refactor this by splitting the logic into separate methods
-    // TODO: properly handle errors
     fn on_send(&self) {
-        let window_weak = self.window.as_weak();
+        let window = self.window.as_weak();
         let model = self.headers_model.clone();
         let client = self.client.clone();
 
         self.window.on_send(move |url, method, body| {
-            window_weak.unwrap().set_is_loading(true);
+            window.unwrap().set_is_loading(true);
 
             let client = client.clone();
-            let window_weak_clone = window_weak.clone();
+            let window_weak = window.clone();
             let headers = to_headers_vector(model.clone());
 
             thread::spawn(move || {
-                // rewrite with a match clause
-                if let Ok(method) = Method::from_str(&method)
-                    && !url.is_empty()
-                {
-                    let header_map_result = to_header_map(headers);
+                let method = Method::from_str(&method).unwrap_or(Method::GET);
+                let header_map = to_header_map(headers);
 
-                    match header_map_result {
-                        Ok(h) => {
-                            let response_result = prepare_request(
-                                client,
-                                method,
-                                url.as_str(),
-                                body.to_string(),
-                                h,
-                            )
-                            .send();
+                match header_map {
+                    Ok(h) => {
+                        let response = create_request(client, method, url, body, h).send();
 
-                            match response_result {
-                                Ok(r) => {
-                                    let status_code = r.status().as_u16() as i32;
-                                    let size = r.content_length().unwrap_or(0).to_string();
-                                    let headers = get_response_headers(&r);
+                        match response {
+                            Ok(r) => {
+                                let status_code = r.status().as_u16() as i32;
+                                let size = r.content_length().unwrap_or(0).to_string();
+                                let headers = read_response_headers(&r);
 
-                                    // rewrite with a match clause
-                                    if let Ok(text) = r.text() {
-                                        set_success(
-                                            window_weak_clone,
-                                            status_code,
-                                            size,
-                                            headers,
-                                            text,
-                                        );
+                                match r.text() {
+                                    Ok(b) => {
+                                        set_success(window_weak, status_code, size, headers, b)
+                                    }
+                                    Err(_) => {
+                                        set_failed(window_weak, "Could not read response body")
                                     }
                                 }
-                                Err(_) => set_failed(window_weak_clone),
                             }
+                            Err(_) => set_failed(window_weak, "Could not connect to the server"),
                         }
-                        Err(_) => set_failed(window_weak_clone),
                     }
+                    Err(_) => set_failed(window_weak, "Max size reached for headers"),
                 }
             });
         });
@@ -166,30 +151,38 @@ fn to_header_map(headers: Vec<[String; 2]>) -> Result<HeaderMap, MaxSizeReached>
     Ok(header_map)
 }
 
-fn prepare_request(
+fn create_request(
     client: Arc<Client>,
     method: Method,
-    url: &str,
-    body: String,
+    url: SharedString,
+    body: SharedString,
     header_map: HeaderMap,
 ) -> reqwest::blocking::RequestBuilder {
-    let mut request = client.request(method.clone(), url).headers(header_map);
+    let mut request = client
+        .request(method.clone(), url.to_string())
+        .headers(header_map);
 
     if method != Method::GET && method != Method::DELETE {
-        request = request.body(body);
+        request = request.body(body.to_string());
     }
 
     request
 }
 
-fn get_response_headers(r: &reqwest::blocking::Response) -> Vec<Vec<StandardListViewItem>> {
+fn read_response_headers(r: &reqwest::blocking::Response) -> Vec<Vec<StandardListViewItem>> {
     r.headers()
         .iter()
-        .map(|(name, value)| {
-            vec![
+        .filter_map(|(name, value)| {
+            let value = value.to_str().ok()?;
+
+            if value.is_empty() {
+                return None;
+            }
+
+            Some(vec![
                 StandardListViewItem::from(SharedString::from(name.as_str())),
-                StandardListViewItem::from(SharedString::from(value.to_str().unwrap_or(""))),
-            ]
+                StandardListViewItem::from(SharedString::from(value)),
+            ])
         })
         .collect()
 }
@@ -207,7 +200,7 @@ fn create_response(
     status_code: i32,
     size: String,
     headers: Vec<Vec<StandardListViewItem>>,
-    text: String,
+    body: String,
 ) -> Response {
     let headers = ModelRc::new(VecModel::from(to_headers_vector_model(headers)));
 
@@ -215,7 +208,7 @@ fn create_response(
         status_code,
         size: size.into(),
         headers,
-        body: text.into(),
+        body: body.into(),
     }
 }
 
@@ -224,25 +217,24 @@ fn set_success(
     status_code: i32,
     size: String,
     headers: Vec<Vec<StandardListViewItem>>,
-    text: String,
+    body: String,
 ) {
     window
         .upgrade_in_event_loop(move |w| {
-            let response = create_response(status_code, size, headers, text);
+            let response = create_response(status_code, size, headers, body);
 
             w.set_response(response);
-            w.set_has_response_error(false);
             w.set_is_loading(false);
         })
         .unwrap();
 }
 
-fn set_failed(window: Weak<AppWindow>) {
-    // substitute has_response_error with error_message and here pass
-    // the message about header map error
+fn set_failed(window: Weak<AppWindow>, error: &str) {
+    let error = error.to_string();
+
     window
         .upgrade_in_event_loop(move |w| {
-            w.set_has_response_error(true);
+            w.set_error(error.into());
             w.set_is_loading(false);
         })
         .unwrap();

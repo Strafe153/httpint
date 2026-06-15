@@ -6,13 +6,13 @@ import { ResponseBody } from "response-body.slint";
 
 export component Response inherits VerticalLayout {
     in property<Response> response;
-    in property<bool> has_error;
+    in property<string> error;
 
     HeaderText {
         text: "Response";
     }
     
-    if root.response.status_code > 0 && !root.has_error: VerticalLayout {
+    if root.response.status_code > 0 && root.error == "": VerticalLayout {
         ResponseBar {
             response: root.response;
         }
@@ -24,7 +24,7 @@ export component Response inherits VerticalLayout {
         ResponseBody {}
     }
 
-    if root.response.status_code == 0 && !root.has_error: VerticalLayout {
+    if root.response.status_code == 0 && root.error == "": VerticalLayout {
         HorizontalLayout {
             alignment: center;
 
@@ -34,12 +34,12 @@ export component Response inherits VerticalLayout {
         }
     }
 
-    if root.has_error: VerticalLayout {
+    if root.error != "": VerticalLayout {
         HorizontalLayout {
             alignment: center;
 
             Text {
-                text: "Could not connect to the server";
+                text: root.error;
             }
         }
     }

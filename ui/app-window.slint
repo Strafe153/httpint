@@ -16,7 +16,7 @@ export component AppWindow inherits Window {
 
     in property<[Header]> headers;
     in property<Response> response;
-    in property<bool> has_response_error;
+    in property<string> error;
     in property<bool> is_loading;
 
     callback send(url: string, type: string, body: string);
@@ -58,7 +58,7 @@ export component AppWindow inherits Window {
                 spacing: Styles.spacing;
 
                 response: root.response;
-                has_error: root.has_response_error;
+                error: root.error;
             }
         }
     }
