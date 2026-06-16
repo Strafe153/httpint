@@ -17,11 +17,12 @@ pub struct WindowHandler<'a> {
 
 impl<'a> WindowHandler<'a> {
     pub fn init(window: &'a AppWindow) -> Self {
-        let headers_model = Rc::new(VecModel::from(vec![Header {
+        let default_headers = vec![Header {
             name: "Accept".into(),
             value: "*/*".into(),
-        }]));
+        }];
 
+        let headers_model = Rc::new(VecModel::from(default_headers));
         window.set_headers(headers_model.clone().into());
 
         WindowHandler {
@@ -218,6 +219,7 @@ fn set_success(
             let response = create_response(status_code, size, headers, body);
 
             w.set_response(response);
+            w.set_error("".into());
             w.set_is_loading(false);
         })
         .unwrap();
