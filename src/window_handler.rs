@@ -1,19 +1,19 @@
 use reqwest::{
     Method,
-    blocking::Client,
-    header::{HeaderMap, HeaderName, HeaderValue, MaxSizeReached},
+    header::{HeaderMap, HeaderName, HeaderValue},
 };
-use serde_json::{from_str, to_string_pretty};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, StandardListViewItem, VecModel, Weak};
 use std::{rc::Rc, str::FromStr, sync::Arc, thread};
 
-use crate::{AppWindow, Header, Response};
+use crate::{
+    AppWindow, Header, Response,
+    request_service::{RequestService, ResponseData},
+};
 
 pub struct WindowHandler<'a> {
     window: &'a AppWindow,
     headers_model: Rc<VecModel<Header>>,
-    // TODO: try making a wrapper around the client with the method to perform a request
-    client: Arc<Client>,
+    client: Arc<RequestService>,
 }
 
 impl<'a> WindowHandler<'a> {
@@ -29,7 +29,7 @@ impl<'a> WindowHandler<'a> {
         WindowHandler {
             window,
             headers_model,
-            client: Arc::new(Client::new()),
+            client: Arc::new(RequestService::new()),
         }
     }
 
@@ -96,39 +96,16 @@ impl<'a> WindowHandler<'a> {
         self.window.on_send(move |url, method, body| {
             window.unwrap().set_is_loading(true);
 
-            let client = client.clone();
             let window_weak = window.clone();
+            let client = client.clone();
             let headers = to_headers_vector(model.clone());
 
-            thread::spawn(move || {
-                let method = Method::from_str(&method).unwrap_or(Method::GET);
-                let header_map = to_header_map(headers);
-
-                match header_map {
-                    Ok(h) => {
-                        let response = create_request(client, method, url, body, h).send();
-
-                        match response {
-                            Ok(r) => {
-                                let status_code = r.status().as_u16() as i32;
-                                let size = r.content_length().unwrap_or(0).to_string();
-                                let headers = read_response_headers(&r);
-
-                                match r.text() {
-                                    Ok(body) => {
-                                        set_success(window_weak, status_code, size, headers, body)
-                                    }
-                                    Err(_) => {
-                                        set_failed(window_weak, "Could not read response body")
-                                    }
-                                }
-                            }
-                            Err(_) => set_failed(window_weak, "Could not connect to the server"),
-                        }
-                    }
-                    Err(_) => set_failed(window_weak, "Max size reached for headers"),
-                }
-            });
+            thread::spawn(
+                move || match perform_request(&client, method, url, body, headers) {
+                    Ok(response) => set_success(window_weak, response),
+                    Err(error) => set_failed(window_weak, error),
+                },
+            );
         });
     }
 }
@@ -140,89 +117,57 @@ fn to_headers_vector(model: Rc<VecModel<Header>>) -> Vec<[String; 2]> {
         .collect()
 }
 
-fn to_header_map(headers: Vec<[String; 2]>) -> Result<HeaderMap, MaxSizeReached> {
+fn to_header_map(headers: Vec<[String; 2]>) -> Result<HeaderMap, String> {
     let mut header_map = HeaderMap::new();
 
     for [name, value] in headers.iter() {
-        header_map.try_append(
-            HeaderName::from_str(name).unwrap(),
-            HeaderValue::from_str(value).unwrap(),
-        )?;
+        let name =
+            HeaderName::from_str(name).map_err(|_| format!("Invalid header name: {}", name))?;
+
+        let value = HeaderValue::from_str(value)
+            .map_err(|_| format!("Invalid header value for {}", name))?;
+
+        header_map
+            .try_append(name, value)
+            .map_err(|_| "Maximum header size exceeded".to_string())?;
     }
 
     Ok(header_map)
 }
 
-fn create_request(
-    client: Arc<Client>,
-    method: Method,
-    url: SharedString,
-    body: SharedString,
-    header_map: HeaderMap,
-) -> reqwest::blocking::RequestBuilder {
-    let mut request = client
-        .request(method.clone(), url.to_string())
-        .headers(header_map);
-
-    if method != Method::GET && method != Method::DELETE {
-        request = request.body(body.to_string());
-    }
-
-    request
-}
-
-fn read_response_headers(r: &reqwest::blocking::Response) -> Vec<Vec<StandardListViewItem>> {
-    r.headers()
-        .iter()
-        .filter_map(|(name, value)| {
-            let value = value.to_str().ok()?;
-
-            if value.is_empty() {
-                return None;
-            }
-
-            Some(vec![
-                StandardListViewItem::from(SharedString::from(name.as_str())),
-                StandardListViewItem::from(SharedString::from(value)),
-            ])
-        })
-        .collect()
-}
-
-fn create_response(
-    status_code: i32,
-    size: String,
-    headers: Vec<Vec<StandardListViewItem>>,
-    body: String,
-) -> Response {
-    let headers: Vec<ModelRc<StandardListViewItem>> = headers
+fn create_response(response: ResponseData) -> Response {
+    let headers: Vec<ModelRc<StandardListViewItem>> = response
+        .headers
         .into_iter()
         .map(|vec| ModelRc::new(VecModel::from(vec)))
         .collect();
 
-    let body = match from_str::<serde_json::Value>(&body) {
-        Ok(value) => to_string_pretty(&value).unwrap_or(body),
-        Err(_) => body,
-    };
-
     Response {
-        status_code,
-        size: size.into(),
+        status_code: response.status_code,
+        size: response.size.to_string().into(),
         headers: ModelRc::new(VecModel::from(headers)),
-        body: body.into(),
+        body: response.body.into(),
     }
 }
 
-fn set_success(
-    window: Weak<AppWindow>,
-    status_code: i32,
-    size: String,
-    headers: Vec<Vec<StandardListViewItem>>,
-    body: String,
-) {
+fn perform_request(
+    client: &RequestService,
+    method: SharedString,
+    url: SharedString,
+    body: SharedString,
+    headers: Vec<[String; 2]>,
+) -> Result<ResponseData, String> {
+    let method =
+        Method::from_str(&method).map_err(|_| format!("Incorrect method type: {}", method))?;
+    let headers = to_header_map(headers)?;
+
+    client.execute(method, url.to_string(), body.to_string(), headers)
+}
+
+fn set_success(window: Weak<AppWindow>, response_data: ResponseData) {
     window
         .upgrade_in_event_loop(move |w| {
-            let response = create_response(status_code, size, headers, body);
+            let response = create_response(response_data);
 
             w.set_response(response);
             w.set_error("".into());
@@ -231,7 +176,7 @@ fn set_success(
         .unwrap();
 }
 
-fn set_failed(window: Weak<AppWindow>, error: &str) {
+fn set_failed(window: Weak<AppWindow>, error: String) {
     let error = error.to_string();
 
     window

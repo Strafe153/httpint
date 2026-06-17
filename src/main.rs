@@ -1,6 +1,7 @@
 use slint::{PlatformError, include_modules};
 use window_handler::WindowHandler;
 
+mod request_service;
 mod window_handler;
 
 include_modules!();
