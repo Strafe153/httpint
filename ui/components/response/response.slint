@@ -21,7 +21,9 @@ export component Response inherits VerticalLayout {
             headers: root.response.headers;
         }
 
-        ResponseBody {}
+        ResponseBody {
+            body: root.response.body;
+        }
     }
 
     if root.response.status_code == 0 && root.error == "": VerticalLayout {

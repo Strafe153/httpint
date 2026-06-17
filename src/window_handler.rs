@@ -3,6 +3,7 @@ use reqwest::{
     blocking::Client,
     header::{HeaderMap, HeaderName, HeaderValue, MaxSizeReached},
 };
+use serde_json::{from_str, to_string_pretty};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, StandardListViewItem, VecModel, Weak};
 use std::{rc::Rc, str::FromStr, sync::Arc, thread};
 
@@ -114,8 +115,8 @@ impl<'a> WindowHandler<'a> {
                                 let headers = read_response_headers(&r);
 
                                 match r.text() {
-                                    Ok(b) => {
-                                        set_success(window_weak, status_code, size, headers, b)
+                                    Ok(body) => {
+                                        set_success(window_weak, status_code, size, headers, body)
                                     }
                                     Err(_) => {
                                         set_failed(window_weak, "Could not read response body")
@@ -198,6 +199,11 @@ fn create_response(
         .into_iter()
         .map(|vec| ModelRc::new(VecModel::from(vec)))
         .collect();
+
+    let body = match from_str::<serde_json::Value>(&body) {
+        Ok(value) => to_string_pretty(&value).unwrap_or(body),
+        Err(_) => body,
+    };
 
     Response {
         status_code,

@@ -1,3 +1,4 @@
+import { TextEdit } from "std-widgets.slint";
 import { Styles } from "../../globals.slint";
 
 export component RequestBody {
@@ -14,19 +15,8 @@ export component RequestBody {
             text: "Body";
         }
 
-        Rectangle {
-            border-color: gray;
-            border-width: 1px;
-            border-radius: 5px;
-
-            VerticalLayout {
-                padding: Styles.padding;
-                
-                TextInput {
-                    single-line: false;
-                    text <=> body;
-                }
-            }
+        TextEdit {
+            text <=> root.body;
         }
     }
 }
