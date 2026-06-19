@@ -3,11 +3,13 @@ import { StandardTableView } from "std-widgets.slint";
 
 export component ResponseHeaders inherits VerticalLayout {
     spacing: Styles.spacing;
+    padding-top: Styles.padding;
+    padding-bottom: Styles.padding;
 
     in property<[[StandardListViewItem]]> headers;
 
     Text {
-        font-size: Styles.font_size;
+        font-size: Styles.heading_font_size;
         text: "Headers";
     }
 

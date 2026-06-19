@@ -10,12 +10,13 @@ export component RequestBody {
         spacing: Styles.spacing;
         
         Text {
-            height: 3%;
-            font-size: Styles.font_size;
+            font-size: Styles.heading_font_size;
             text: "Body";
         }
 
         TextEdit {
+            font-size: Styles.font_size;
+            placeholder-text: "{\n    \"key\": \"value\"\n}";
             text <=> root.body;
         }
     }

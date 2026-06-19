@@ -55,8 +55,6 @@ pub struct ResponseData {
 impl ResponseData {
     fn from_response(response: reqwest::blocking::Response) -> Result<Self, String> {
         let status_code = response.status().as_u16() as i32;
-        let t = response.content_length();
-        println!("{:#?}", t);
         let size = response.content_length().unwrap_or(0);
 
         let headers = response

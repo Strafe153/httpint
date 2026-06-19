@@ -26,13 +26,14 @@ export component RequestBar {
         }
 
         LineEdit {
+            font-size: Styles.font_size;
             placeholder-text: "http://localhost";
             text <=> root.url;
         }
 
         Button {
             text: "Send";
-            enabled: !root.url.is-empty;
+            enabled: !root.url.is_empty;
             
             clicked => root.send(root.url, root.type);
         }

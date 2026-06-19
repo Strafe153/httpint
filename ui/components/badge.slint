@@ -1,0 +1,13 @@
+import { Styles } from "../globals.slint";
+
+export component Badge inherits Rectangle {
+    width: root.parent_width * 0.2;
+
+    in property<length> parent_width;
+    in property<string> text;
+
+    Text {
+        font-size: Styles.font_size;
+        text: root.text;
+    }
+}

@@ -1,13 +1,38 @@
+import { Styles } from "../../globals.slint";
 import { Response } from "../../structs/response.slint";
+import { Badge } from "../badge.slint";
 
 export component ResponseBar inherits HorizontalLayout {
+    spacing: Styles.spacing;
+    min-height: 24px;
+
     in property<Response> response;
 
-    Text {
-        text: "Status code: \{root.response.status-code}";
+    pure function status_code_color() -> brush {
+        if root.response.status_code >= 100 && root.response.status_code < 200 {
+            return #4191F2;
+        }
+
+        if root.response.status_code >= 200 && root.response.status_code < 300 {
+            return #15A210;
+        }
+
+        if root.response.status_code >= 300 && root.response.status_code < 400 {
+            return #FC8C03;
+        }
+
+        return #FC2403;
     }
 
-    Text {
-        text: "Size: \{root.response.size}B";
+    Badge {
+        background: root.status_code_color();
+        parent_width: root.width;
+        text: root.response.status_code;
+    }
+
+    Badge {
+        background: #616161;
+        parent_width: root.width;
+        text: "\{root.response.size}B";
     }
 }

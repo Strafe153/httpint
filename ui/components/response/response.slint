@@ -1,3 +1,4 @@
+import { Styles } from "../../globals.slint";
 import { Response } from "../../structs/response.slint";
 import { HeaderText } from "../header-text.slint";
 import { ResponseBar } from "response-bar.slint";
@@ -22,6 +23,7 @@ export component Response inherits VerticalLayout {
         }
 
         ResponseBody {
+            min-height: Styles.min_body_height;
             body: root.response.body;
         }
     }
@@ -31,6 +33,7 @@ export component Response inherits VerticalLayout {
             alignment: center;
 
             Text {
+                font-size: Styles.heading_font_size;
                 text: "No response";
             }
         }

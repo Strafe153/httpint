@@ -13,12 +13,14 @@ export component RequestHeader inherits HorizontalLayout {
 
     LineEdit {
         text: header.name;
+        font-size: Styles.font_size;
 
         edited(value) => root.edit_name(value);
     }
 
     LineEdit {
         text: header.value;
+        font-size: Styles.font_size;
 
         edited(value) => root.edit_value(value);
     }

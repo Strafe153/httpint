@@ -2,15 +2,17 @@ import { TextEdit } from "std-widgets.slint";
 import { Styles } from "../../globals.slint";
 
 export component ResponseBody inherits VerticalLayout {
+    spacing: Styles.spacing;
+    
     in property<string> body;
 
     Text {
-        height: 3%;
-        font-size: Styles.font_size;
+        font-size: Styles.heading_font_size;
         text: "Body";
     }
 
     TextEdit {
+        font-size: Styles.font_size;
         text: root.body;
         read-only: true;
     }
