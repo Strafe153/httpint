@@ -1,6 +1,6 @@
 # Httpint
 
-Httpint is a primitive API client that allows you to send HTTP requests, customize headers, request bodies, and inspect respones. The user interface is built with [Slint](https://docs.slint.dev/latest/docs/slint/), while the back-end is powered by [Rust](https://rust-lang.org/).
+Httpint is a primitive API client that allows you to send HTTP requests, customize headers, request bodies, and inspect responses. The user interface is built with [Slint](https://docs.slint.dev/latest/docs/slint/), while the back-end is powered by [Rust](https://rust-lang.org/).
 
 ## Disclaimer
 
