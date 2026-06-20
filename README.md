@@ -4,8 +4,7 @@ Httpint is a primitive API client that allows you to send HTTP requests, customi
 
 ## Disclaimer
 
-Even though the program aims to be useful, it is distributed under the MIT License WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.  
-The users are solely responsible for determining the appropriateness of using or redistributing the Work and assume any risks associated with their exercise of permissions under the License.
+Although this program aims to be useful, it is distributed under the GNU General Public License v3.0 License "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 ## Preview
 <img src="assets/preview.png" alt="Preview" width="637" height="370" />
